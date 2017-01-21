@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <title>LiveChat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/bootstrap.css" media="screen">
+    <link rel="stylesheet" href="css/usebootstrap.css">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.js"></script>
+      <script src="js/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <a href="#" class="navbar-brand">LiveChat</a>
+          <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+        </div>
+        <div class="navbar-collapse collapse" id="navbar-main">
+          
+		  <ul class="nav navbar-nav">
+            
+		  </ul>
+		  
+		  
+        </div>
+      </div>
+    </div>
+
+
+    <div class="container">
+
+	  <div class="row">
+          <div class="col-lg-12">
+            <div class="page-header">
+              <h1 id="container">채팅</h1>
+            </div>
+            <div class="form-group">
+              <textarea class="form-control" rows="20" id="messages" style="resize: none;" readonly="readonly" wrap="hard"></textarea>
+            </div>
+            <form action="">
+            <div class="row">
+            <div class="col-lg-2">
+              <span id="userid"></span> :
+            </div>
+              <div class="col-lg-6">
+                <input id="m" class="form-control" autocomplete="off" placeholder="내용" />
+              </div>
+              <button>Send</button>
+            </div>
+            </form>
+          </div>
+        </div>
+
+    </div>
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+	<script src="js/usebootstrap.js"></script>
+  <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+  <script>
+    // Init socket.
+    var socket = io();
+    
+    // Setting client's chat nickname.
+    var nickname = 'user' + Math.floor((Math.random() * 10000) + 1);
+
+    var token = getToken();
+
+    var handshake = {
+      nickname_key: nickname,
+      token_key: token, 
+    };
+
+    socket.emit('send handshake', handshake);
+
+    $('#userid').html(nickname);
+    //var nickname = 'user';
+
+    // Send to server.
+    $('form').submit(function(){
+      if ($('#m').val() == "") {
+        return false;
+      }
+      var data = {
+        nickname_key: nickname,
+        token_key: token,
+        chat_message: $('#m').val()
+      };
+
+      socket.emit('chat message', data);
+      $('#m').val('');
+      auto_scroll();
+      return false;
+    });
+
+    // Receive from server.
+    socket.on('chat message', function(msg){
+      $('#messages').append('[' + msg.ip + '] ' + msg.nickname_key + " : " + msg.chat_message + "\n");
+      auto_scroll();
+    });
+
+    socket.on('join', function(msg){
+      $('#messages').append('[알림] ' + msg.user + '(' + msg.ip + ')가 들어왔습니다\n');
+      auto_scroll();
+    });
+    socket.on('leave', function(msg){
+      $('#messages').append('[알림] ' + msg.user + '(' + msg.ip + ')가 나갔습니다\n');
+      auto_scroll();
+    });
+
+    socket.on('close server', function(msg){
+      if(msg === '1') {
+        alert('Server disconnected.');
+      }
+      auto_scroll();
+    });
+
+    socket.on('token error', function(msg){
+      alert('Token Error!');
+    });
+
+    socket.on('exist nickname', function(msg){
+      $('#messages').append("Exist nickname!");
+    });
+
+    function auto_scroll() {
+      $("#messages")[0].scrollTop = $("#messages")[0].scrollHeight;
+    }
+
+    function getToken() {
+      var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+      var string_length = 66;
+      var token = '';
+      for (var i=0; i<string_length; i++) {
+        var rnum = Math.floor(Math.random() * chars.length);
+        token += chars.substring(rnum,rnum+1);
+      }
+    return token;
+    }
+  </script>
+  </body>
+</html>
